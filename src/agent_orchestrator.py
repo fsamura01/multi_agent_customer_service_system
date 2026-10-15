@@ -529,7 +529,7 @@ def build_policy_agent() -> Agent:
     )
 
     @tool
-    def search_all_policies(query: str) -> str:
+    def search_all_policies(query: str) -> dict:
         """
         Query all three policy knowledge bases IN PARALLEL and return combined results.
 
@@ -556,7 +556,7 @@ def build_policy_agent() -> Agent:
 
         def _run_retriever(domain: str, agent, query: str) -> tuple:
             result = agent(query)
-            return domain, result
+            return domain, str(result)
 
         with ThreadPoolExecutor(max_workers=3) as executor:
             futures = {
@@ -576,8 +576,11 @@ def build_policy_agent() -> Agent:
         for domain in ['Returns', 'Shipping', 'Warranty']:
             trace.kb_result(domain, results.get(domain, '[No results]'))
 
-        combined_results = "\n\n".join([f"{domain}: {content}" for domain, content in results.items()])
-        return combined_results
+        combined_text = "\n\n".join([f"{domain}: {content}" for domain, content in results.items()])
+        return {
+            'status': 'success',
+            'content': [{'text': combined_text}],
+        }
 
     coordinator_model = BedrockModel(
         model_id=config.WORKER_MODEL_ID,
